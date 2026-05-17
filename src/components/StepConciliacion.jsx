@@ -15,28 +15,14 @@ const SECCIONES_ORDER = [
 ]
 
 async function descargarExcel(res, banco, mes) {
-  const texto = await res.clone().text()
-  let bytes
-
-  try {
-    const binary = atob(texto.trim())
-    bytes = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i)
-    }
-  } catch {
-    const buffer = await res.arrayBuffer()
-    bytes = new Uint8Array(buffer)
-  }
-
-  const blob = new Blob([bytes], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  })
+  const blob = await res.blob()
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
   a.download = `Conciliacion_${banco}_${mes}.xlsx`
+  document.body.appendChild(a)
   a.click()
+  a.remove()
   URL.revokeObjectURL(url)
 }
 
@@ -75,12 +61,24 @@ export default function StepConciliacion({ state, dispatch, onReset, onShowHelp 
     setExcelError(null)
 
     try {
+      const mapItems = (arr) => arr.map(p => ({
+        fecha: p.fecha || '',
+        concepto: p.descripcion || '',
+        referencia: p.referencia || '',
+        importe: Math.abs(Number(p.monto) || 0),
+      }))
       const payload = {
-        meta,
-        saldo_extracto,
-        saldo_contable,
-        secciones,
-        sin_asignar,
+        mes: meta?.mes || '',
+        empresa: meta?.empresa || '',
+        banco: meta?.banco || '',
+        saldo_extracto: Number(saldo_extracto) || 0,
+        saldo_contable: Number(saldo_contable) || 0,
+        secciones: {
+          pagos_banco_no_contab:     mapItems(secciones.pagos_no_contabilizados),
+          pagos_contab_no_debitados: mapItems(secciones.pagos_no_debitados),
+          cobr_no_contab:            mapItems(secciones.cobranzas_no_contabilizadas),
+          cobr_no_acreditadas:       mapItems(secciones.cobranzas_no_acreditadas),
+        },
       }
       const res = await generarExcel(payload)
       await descargarExcel(res, meta?.banco || 'banco', meta?.mes || 'mes')
