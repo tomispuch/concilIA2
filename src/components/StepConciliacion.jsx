@@ -4,6 +4,7 @@ import MetricasCards from './MetricasCards'
 import SeccionConciliacion from './SeccionConciliacion'
 import ZonaSinAsignar from './ZonaSinAsignar'
 import FooterSaldos from './FooterSaldos'
+import ModalConciliados from './ModalConciliados'
 import { generarExcel } from '../utils/webhooks'
 import { formatMoneda } from '../utils/formatters'
 
@@ -29,6 +30,7 @@ async function descargarExcel(res, banco, mes) {
 export default function StepConciliacion({ state, dispatch, onReset, onShowHelp }) {
   const [generandoExcel, setGenerandoExcel] = useState(false)
   const [excelError, setExcelError] = useState(null)
+  const [verConciliados, setVerConciliados] = useState(false)
 
   const { secciones, sin_asignar, conciliados, sugerencias, saldo_extracto, saldo_contable, meta, matchingStatus, groqWarning } = state
 
@@ -130,6 +132,7 @@ export default function StepConciliacion({ state, dispatch, onReset, onShowHelp 
           sugerencias={sugerencias}
           saldo_extracto={saldo_extracto}
           saldo_contable={saldo_contable}
+          onVerConciliados={() => setVerConciliados(true)}
         />
 
         {sugerencias.length > 0 && (
@@ -198,6 +201,17 @@ export default function StepConciliacion({ state, dispatch, onReset, onShowHelp 
         secciones={secciones}
         dispatch={dispatch}
       />
+
+      {verConciliados && (
+        <ModalConciliados
+          conciliados={conciliados}
+          onClose={() => setVerConciliados(false)}
+          onDeshacer={(id) => {
+            dispatch({ type: 'UNDO_CONCILIADO', conciliadoId: id })
+            if (conciliados.length <= 1) setVerConciliados(false)
+          }}
+        />
+      )}
     </div>
   )
 }

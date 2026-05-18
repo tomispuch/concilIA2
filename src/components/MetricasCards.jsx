@@ -1,6 +1,6 @@
 import { formatMoneda } from '../utils/formatters'
 
-export default function MetricasCards({ secciones, sin_asignar, conciliados, sugerencias: sugs, saldo_extracto, saldo_contable }) {
+export default function MetricasCards({ secciones, sin_asignar, conciliados, sugerencias: sugs, saldo_extracto, saldo_contable, onVerConciliados }) {
   const abs = (arr) => arr.reduce((s, p) => s + Math.abs(Number(p.monto) || 0), 0)
   // Fórmula correcta de conciliación bancaria:
   // Saldo extracto + pagos_nc - pagos_nd - cobr_nc + cobr_na = Saldo contable
@@ -15,16 +15,20 @@ export default function MetricasCards({ secciones, sin_asignar, conciliados, sug
 
   return (
     <div className="grid grid-cols-4 gap-4">
-      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <button
+        onClick={onVerConciliados}
+        className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm text-left hover:border-green-300 hover:shadow-md transition-all group"
+      >
         <div className="flex items-center gap-2 mb-2">
           <div className="w-2 h-2 rounded-full bg-green-500" />
           <p className="text-xs text-gray-500 font-medium">Conciliados</p>
+          <span className="ml-auto text-xs text-gray-300 group-hover:text-green-500 transition-colors">Ver →</span>
         </div>
         <p className="text-2xl font-bold text-gray-900">
           {conciliados.reduce((s, c) => s + (c.esGrupal ? (c.extracto?.length || 0) + (c.mayor?.length || 0) : 2), 0) / 2 | 0}
         </p>
         <p className="text-xs text-gray-400 mt-0.5">pares conciliados</p>
-      </div>
+      </button>
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
