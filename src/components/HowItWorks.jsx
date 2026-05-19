@@ -74,7 +74,7 @@ export default function HowItWorks({ onClose }) {
 
                 <div className="border border-amber-200 bg-amber-50 rounded-lg p-3">
                   <p className="text-xs font-bold text-amber-700 mb-1">🟡 Sugerencias de la IA</p>
-                  <p className="text-xs text-gray-600 leading-relaxed">La IA de Groq analizó las descripciones y encontró pares que <em>probablemente</em> corresponden al mismo movimiento, aunque los importes difieren levemente (hasta un 5%). El contador debe <strong>Aceptar</strong> o <strong>Rechazar</strong> cada sugerencia. Si acepta, pasan a conciliados. Si rechaza, quedan en sus secciones como items pendientes.</p>
+                  <p className="text-xs text-gray-600 leading-relaxed">La IA de Groq analizó las descripciones y encontró pares que <em>probablemente</em> corresponden al mismo movimiento, aunque los importes difieren levemente (hasta un 5%). El usuario debe <strong>Aceptar</strong> o <strong>Rechazar</strong> cada sugerencia. Si acepta, pasan a conciliados. Si rechaza, quedan en sus secciones como items pendientes.</p>
                 </div>
 
                 <div className="border border-red-200 bg-red-50 rounded-lg p-3">
@@ -139,7 +139,7 @@ export default function HowItWorks({ onClose }) {
             <section>
               <h2 className="text-base font-bold text-[#082e56] mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 bg-[#082e56] text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
-                Qué hace el contador
+                Qué hace el usuario
               </h2>
               <div className="space-y-2">
                 {[
