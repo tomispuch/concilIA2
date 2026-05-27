@@ -159,6 +159,50 @@ export default function ZonaSinAsignar({ partidas, dispatch }) {
         </div>
       </div>
 
+      {/* Barra de acción — visible debajo del header cuando hay selección */}
+      {haySeleccion && (
+        <div className="bg-[#082e56] text-white px-4 py-3 border-b border-[#0a3d72] flex items-center gap-4 flex-wrap">
+          {puedeMarcar ? (
+            <>
+              <div className="text-xs text-blue-200">
+                <span className="text-white font-medium">{selBanco.size} banco</span> ({formatMoneda(sumBanco)})
+                {' '} + <span className="text-white font-medium">{selLibros.size} libros</span> ({formatMoneda(sumLibros)})
+                {dif > 0 && (
+                  <span className={`ml-2 ${dif / Math.max(sumBanco, sumLibros) < 0.05 ? 'text-green-300' : 'text-amber-300'}`}>
+                    · dif {formatMoneda(dif)}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={handleCruce}
+                className="px-4 py-1.5 text-xs font-bold bg-green-500 hover:bg-green-400 rounded-lg transition-colors"
+              >
+                ✓ Marcar como cruce
+              </button>
+            </>
+          ) : (
+            <span className="text-xs text-blue-300">
+              {selBanco.size > 0
+                ? `${selBanco.size} banco seleccionados — seleccioná también items del mayor para hacer cruce`
+                : `${selLibros.size} libros seleccionados — seleccioná también items del banco para hacer cruce`}
+            </span>
+          )}
+          <div className="flex items-center gap-2 ml-auto">
+            <select
+              onChange={e => { if (e.target.value) { handleAsignarMasivo(e.target.value); e.target.value = '' } }}
+              defaultValue=""
+              className="text-xs border border-blue-400 rounded px-2 py-1.5 bg-white/10 text-white focus:outline-none"
+            >
+              <option value="" disabled className="text-gray-800">Asignar a sección...</option>
+              {SECCIONES.map(s => <option key={s.id} value={s.id} className="text-gray-800">{s.label}</option>)}
+            </select>
+            <button onClick={() => { setSelBanco(new Set()); setSelLibros(new Set()) }} className="text-xs text-blue-300 hover:text-white">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Dos columnas */}
       <div className="grid grid-cols-2 divide-x divide-gray-200">
 
@@ -247,49 +291,6 @@ export default function ZonaSinAsignar({ partidas, dispatch }) {
         </div>
       </div>
 
-      {/* Barra de acción sticky */}
-      {haySeleccion && (
-        <div className="sticky bottom-0 bg-[#082e56] text-white px-4 py-3 border-t border-[#0a3d72] flex items-center gap-4 flex-wrap">
-          {puedeMarcar ? (
-            <>
-              <div className="text-xs text-blue-200">
-                <span className="text-white font-medium">{selBanco.size} banco</span> ({formatMoneda(sumBanco)})
-                {' '} + <span className="text-white font-medium">{selLibros.size} libros</span> ({formatMoneda(sumLibros)})
-                {dif > 0 && (
-                  <span className={`ml-2 ${dif / Math.max(sumBanco, sumLibros) < 0.05 ? 'text-green-300' : 'text-amber-300'}`}>
-                    · dif {formatMoneda(dif)}
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={handleCruce}
-                className="px-4 py-1.5 text-xs font-bold bg-green-500 hover:bg-green-400 rounded-lg transition-colors"
-              >
-                ✓ Marcar como cruce
-              </button>
-            </>
-          ) : (
-            <span className="text-xs text-blue-300">
-              {selBanco.size > 0
-                ? `${selBanco.size} banco seleccionados — seleccioná también items del mayor para hacer cruce`
-                : `${selLibros.size} libros seleccionados — seleccioná también items del banco para hacer cruce`}
-            </span>
-          )}
-          <div className="flex items-center gap-2 ml-auto">
-            <select
-              onChange={e => { if (e.target.value) { handleAsignarMasivo(e.target.value); e.target.value = '' } }}
-              defaultValue=""
-              className="text-xs border border-blue-400 rounded px-2 py-1.5 bg-white/10 text-white focus:outline-none"
-            >
-              <option value="" disabled className="text-gray-800">Asignar a sección...</option>
-              {SECCIONES.map(s => <option key={s.id} value={s.id} className="text-gray-800">{s.label}</option>)}
-            </select>
-            <button onClick={() => { setSelBanco(new Set()); setSelLibros(new Set()) }} className="text-xs text-blue-300 hover:text-white">
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
