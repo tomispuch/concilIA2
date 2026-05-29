@@ -4,12 +4,19 @@ function montoIgual(a, b) {
   return Math.round(Math.abs(a) * 100) === Math.round(Math.abs(b) * 100)
 }
 
+function umbralAmarillo(monto) {
+  const abs = Math.abs(monto)
+  if (abs < 10000) return 0.01
+  if (abs < 100000) return 0.005
+  if (abs < 1000000) return 0.002
+  return 0.001
+}
+
 function esCandidatoAmarillo(a, b) {
   if (Math.abs(a) === 0) return false
   const diff = Math.abs(Math.abs(a) - Math.abs(b))
   const pct = diff / Math.abs(a)
-  // Solo diferencias pequeñas pero NO exactas (los exactos ya se cruzan solos)
-  return pct > 0 && pct < 0.05
+  return pct > 0 && pct < umbralAmarillo(a)
 }
 
 // Clasifica automáticamente una partida sin match en la sección que corresponde
