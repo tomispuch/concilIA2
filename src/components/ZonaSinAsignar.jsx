@@ -103,15 +103,26 @@ export default function ZonaSinAsignar({ partidas, dispatch }) {
   const [busquedaBanco, setBusquedaBanco] = useState('')
   const [busquedaLibros, setBusquedaLibros] = useState('')
 
+  const matchBusqueda = (p, q) => {
+    if (!q) return true
+    const ql = q.toLowerCase()
+    const montoAbs = Math.abs(Number(p.monto) || 0)
+    return (
+      p.descripcion?.toLowerCase().includes(ql) ||
+      String(montoAbs).includes(ql) ||
+      formatMoneda(montoAbs).includes(ql)
+    )
+  }
+
   const itemsBanco = useMemo(() =>
     sortear(partidas.filter(p => p.origen === 'extracto' || (p.origen === 'arrastre' && p._seccionOrigen !== 'pagos_no_debitados' && p._seccionOrigen !== 'cobranzas_no_acreditadas'))
-      .filter(p => !busquedaBanco || p.descripcion?.toLowerCase().includes(busquedaBanco.toLowerCase())),
+      .filter(p => matchBusqueda(p, busquedaBanco)),
     ordenBanco),
   [partidas, ordenBanco, busquedaBanco])
 
   const itemsLibros = useMemo(() =>
     sortear(partidas.filter(p => p.origen === 'mayor' || (p.origen === 'arrastre' && (p._seccionOrigen === 'pagos_no_debitados' || p._seccionOrigen === 'cobranzas_no_acreditadas')))
-      .filter(p => !busquedaLibros || p.descripcion?.toLowerCase().includes(busquedaLibros.toLowerCase())),
+      .filter(p => matchBusqueda(p, busquedaLibros)),
     ordenLibros),
   [partidas, ordenLibros, busquedaLibros])
 
@@ -156,7 +167,29 @@ export default function ZonaSinAsignar({ partidas, dispatch }) {
           <h3 className="text-sm font-bold">Movimientos pendientes</h3>
           <span className="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full">{partidas.length}</span>
           <span className="text-xs text-gray-400">— seleccioná items en ambas columnas para marcar un cruce</span>
+          <div className="relative group">
+            <button className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 text-white text-xs font-bold flex items-center justify-center transition-colors">?</button>
+            <div className="absolute left-0 top-6 z-20 w-72 bg-gray-900 text-gray-100 text-xs rounded-lg p-3 shadow-xl hidden group-hover:block leading-relaxed">
+              <p className="font-semibold text-white mb-1">¿Por qué estos movimientos están acá?</p>
+              <p>El sistema no pudo encontrar una contraparte automática para ellos. Asignarlos sin confirmación sería adivinar y podría arruinar el saldo.</p>
+              <p className="mt-2">Tenés tres opciones por cada ítem:</p>
+              <ul className="mt-1 space-y-1 list-none">
+                <li>→ <span className="text-blue-300">Asignar a sección</span> si no tiene contraparte</li>
+                <li>→ <span className="text-green-300">Marcar como cruce</span> si encontrás su par en la otra columna</li>
+                <li>→ <span className="text-yellow-300">Editar</span> si los datos están incorrectos</li>
+              </ul>
+            </div>
+          </div>
         </div>
+        <button
+          onClick={() => {
+            if (window.confirm(`¿Clasificar automáticamente los ${partidas.length} movimientos pendientes?\n\nExtracto → "Pagos banco no contabilizados"\nMayor → "Pagos contabilizados no debitados"\n\nQuedan marcados como "auto" para que los puedas revisar.`))
+              dispatch({ type: 'AUTO_CLASIFICAR_PENDIENTES' })
+          }}
+          className="text-xs bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg px-3 py-1.5 transition-colors shrink-0"
+        >
+          Auto-clasificar todo
+        </button>
       </div>
 
       {/* Barra de acción — visible debajo del header cuando hay selección */}

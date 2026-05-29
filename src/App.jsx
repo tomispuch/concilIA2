@@ -276,6 +276,21 @@ function reducer(state, action) {
         },
       }
     }
+    case 'AUTO_CLASIFICAR_PENDIENTES': {
+      const esBanco = p => p.origen === 'extracto' ||
+        (p.origen === 'arrastre' && p._seccionOrigen !== 'pagos_no_debitados' && p._seccionOrigen !== 'cobranzas_no_acreditadas')
+      const bancoPart = state.sin_asignar.filter(esBanco).map(p => ({ ...p, autoClasificado: true }))
+      const librosPart = state.sin_asignar.filter(p => !esBanco(p)).map(p => ({ ...p, autoClasificado: true }))
+      return {
+        ...state,
+        sin_asignar: [],
+        secciones: {
+          ...state.secciones,
+          pagos_no_contabilizados: [...state.secciones.pagos_no_contabilizados, ...bancoPart],
+          pagos_no_debitados: [...state.secciones.pagos_no_debitados, ...librosPart],
+        },
+      }
+    }
     case 'ASSIGN_SECTION': {
       const { partidaId, targetSeccionId } = action
       const partida = state.sin_asignar.find(p => p.id === partidaId)

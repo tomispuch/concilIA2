@@ -8,8 +8,8 @@ function esCandidatoAmarillo(a, b) {
   if (Math.abs(a) === 0) return false
   const diff = Math.abs(Math.abs(a) - Math.abs(b))
   const pct = diff / Math.abs(a)
-  // Incluye exactos con múltiples candidatos (pct=0) y diferencias hasta 5%
-  return pct < 0.05
+  // Solo diferencias pequeñas pero NO exactas (los exactos ya se cruzan solos)
+  return pct > 0 && pct < 0.05
 }
 
 // Clasifica automáticamente una partida sin match en la sección que corresponde
@@ -119,9 +119,28 @@ async function runMatching(n8nData) {
     }
   }
 
+  // Paso 1c: tercera pasada — exactos que quedaron tras resolver duplicados
+  for (const ext of extracto) {
+    if (extractoMatcheado.has(ext.id) || Math.abs(ext.monto) === 0) continue
+    const candidates = mayor.filter(m => !mayorUsado.has(m.id) && montoIgual(ext.monto, m.monto))
+    if (candidates.length >= 1) {
+      const extMs = new Date(ext.fecha).getTime()
+      const best = candidates.reduce((a, b) =>
+        Math.abs(new Date(a.fecha).getTime() - extMs) <= Math.abs(new Date(b.fecha).getTime() - extMs) ? a : b
+      )
+      mayorUsado.add(best.id)
+      extractoMatcheado.add(ext.id)
+      conciliados.push({
+        id: `c_${ext.id}`,
+        extracto: { id: ext.id, fecha: ext.fecha, descripcion: ext.descripcion, monto: ext.monto, referencia: ext.referencia },
+        mayor: { id: best.id, fecha: best.fecha, descripcion: best.descripcion, monto: best.monto, referencia: best.referencia },
+      })
+    }
+  }
+
   self.postMessage({ type: 'progress', percent: 40, message: 'Matching exacto completado...' })
 
-  // Paso 2: candidatos amarillos (diff < 1%) → para Groq
+  // Paso 2: candidatos amarillos (diff < 5% pero NO exactos) → para Groq
   const extractoRojos = extracto.filter(t => !extractoMatcheado.has(t.id) && Math.abs(t.monto) > 0)
   const mayorRojos = mayor.filter(m => !mayorUsado.has(m.id) && Math.abs(m.monto) > 0)
   const candidatos = []

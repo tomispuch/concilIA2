@@ -19,9 +19,10 @@ const OTRAS = {
 function FilaSeccion({ partida, seccionId, dispatch }) {
   const [editando, setEditando] = useState(false)
   const isArrastre = partida.origen === 'arrastre'
+  const isAuto = partida.autoClasificado
 
   return (
-    <div className={`border-b border-gray-50 last:border-0 px-4 py-2.5 hover:bg-gray-50 transition-colors ${isArrastre ? 'bg-slate-50/50' : ''}`}>
+    <div className={`border-b border-gray-50 last:border-0 px-4 py-2.5 hover:bg-gray-50 transition-colors ${isArrastre ? 'bg-slate-50/50' : ''} ${isAuto ? 'bg-amber-50/50' : ''}`}>
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-3">
@@ -33,9 +34,19 @@ function FilaSeccion({ partida, seccionId, dispatch }) {
             <span className="text-sm font-semibold text-gray-900 shrink-0">{formatMoneda(Math.abs(Number(partida.monto) || 0))}</span>
           </div>
           {isArrastre && <span className="text-xs text-slate-500 ml-20">↳ arrastre mes anterior</span>}
+          {isAuto && <span className="text-xs text-amber-600 font-medium ml-20">⚡ auto-clasificado — revisá si corresponde</span>}
           {partida.editado && <span className="text-xs text-blue-500 ml-20">editado</span>}
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          {isAuto && (
+            <button
+              onClick={() => dispatch({ type: 'UNASSIGN_FROM_SECTION', seccionId, partidaId: partida.id })}
+              className="text-xs text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-400 bg-amber-50 rounded px-2 py-1 transition-colors"
+              title="Mover a pendientes para cruzarlo manualmente"
+            >
+              Cruzar
+            </button>
+          )}
           <select
             onChange={e => {
               const v = e.target.value
