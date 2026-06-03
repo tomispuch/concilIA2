@@ -1,6 +1,7 @@
 import { useReducer, useRef, useCallback, useState } from 'react'
 import StepUpload from './components/StepUpload'
 import StepConciliacion from './components/StepConciliacion'
+import ConversorExtracto from './components/ConversorExtracto'
 import Loader from './components/Loader'
 import HowItWorks from './components/HowItWorks'
 import { parsearArchivos } from './utils/webhooks'
@@ -188,6 +189,10 @@ function reducer(state, action) {
       return { ...state, [action.campo]: action.valor }
     case 'RESET':
       return { ...initialState }
+    case 'GOTO_CONVERSOR':
+      return { ...state, step: 'conversor' }
+    case 'VOLVER_UPLOAD':
+      return { ...state, step: 'upload' }
     case 'CRUCE_MANUAL': {
       const { bancoIds, librosIds } = action
       const banco = state.sin_asignar.filter(p => bancoIds.includes(p.id))
@@ -414,6 +419,7 @@ export default function App() {
           error={state.error}
           onClearError={() => dispatch({ type: 'CLEAR_ERROR' })}
           onShowHelp={() => setShowHelp(true)}
+          onGoConversor={() => dispatch({ type: 'GOTO_CONVERSOR' })}
         />
       )}
       {state.step === 'conciliacion' && (
@@ -423,6 +429,9 @@ export default function App() {
           onReset={handleReset}
           onShowHelp={() => setShowHelp(true)}
         />
+      )}
+      {state.step === 'conversor' && (
+        <ConversorExtracto onVolver={() => dispatch({ type: 'VOLVER_UPLOAD' })} />
       )}
     </div>
   )

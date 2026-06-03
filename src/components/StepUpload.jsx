@@ -56,7 +56,7 @@ function Dropzone({ label, hint, accept, file, onFile }) {
   )
 }
 
-export default function StepUpload({ onAnalizar, error, onClearError, onShowHelp }) {
+export default function StepUpload({ onAnalizar, error, onClearError, onShowHelp, onGoConversor }) {
   const [extracto, setExtracto] = useState(null)
   const [mayor, setMayor] = useState(null)
   const [anterior, setAnterior] = useState(null)
@@ -145,7 +145,22 @@ export default function StepUpload({ onAnalizar, error, onClearError, onShowHelp
             {ready ? 'Analizar archivos' : `Faltan ${[!extracto, !mayor, !anterior].filter(Boolean).length} archivo${[!extracto, !mayor, !anterior].filter(Boolean).length > 1 ? 's' : ''}`}
           </button>
 
-          <div className="mt-10 pt-6 border-t border-gray-200 flex items-center justify-center">
+          <div className="mt-6 pt-5 border-t border-gray-200">
+            <button
+              onClick={onGoConversor}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-gray-200 hover:border-[#082e56] hover:bg-blue-50/40 transition-all group"
+            >
+              <div className="text-left">
+                <p className="text-sm font-medium text-gray-700 group-hover:text-[#082e56]">Convertir extracto bancario</p>
+                <p className="text-xs text-gray-400 mt-0.5">Normalizá y clasificá un extracto sin hacer conciliación</p>
+              </div>
+              <svg className="w-4 h-4 text-gray-400 group-hover:text-[#082e56] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="mt-6 pt-5 border-t border-gray-200 flex items-center justify-center">
             <a
               href="https://trs-automatizaciones.vercel.app/"
               target="_blank"
