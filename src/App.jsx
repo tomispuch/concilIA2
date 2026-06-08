@@ -131,6 +131,7 @@ const initialState = {
   groqWarning: false,
   conciliados: [],
   sugerencias: [],
+  sugerencias_multi: [],
   secciones: {
     pagos_no_contabilizados: [],
     pagos_no_debitados: [],
@@ -166,6 +167,7 @@ function reducer(state, action) {
         groqWarning: false,
         conciliados: [],
         sugerencias: [],
+        sugerencias_multi: [],
         secciones: { pagos_no_contabilizados: [], pagos_no_debitados: [], cobranzas_no_contabilizadas: [], cobranzas_no_acreditadas: [] },
         sin_asignar: [],
       }
@@ -178,6 +180,7 @@ function reducer(state, action) {
         matchingProgress: 100,
         conciliados: action.conciliados,
         sugerencias: action.sugerencias,
+        sugerencias_multi: action.sugerencias_multi,
         secciones: action.secciones,
         sin_asignar: action.sin_asignar,
       }
@@ -232,6 +235,35 @@ function reducer(state, action) {
       }
     }
 
+    case 'ACCEPT_SUGERENCIA_MULTI': {
+      const { sugerenciaId } = action
+      const sug = state.sugerencias_multi.find(s => s.id === sugerenciaId)
+      if (!sug) return state
+      return {
+        ...state,
+        sugerencias_multi: state.sugerencias_multi.filter(s => s.id !== sugerenciaId),
+        conciliados: [...state.conciliados, {
+          id: sug.id.replace(/^multi_/, 'c_multi_'),
+          esGrupal: true,
+          extracto: sug.extracto,
+          mayor: [sug.mayor],
+          monto_extracto: sug.extracto.reduce((s, e) => s + Math.abs(Number(e.monto) || 0), 0),
+          monto_mayor: Math.abs(Number(sug.mayor.monto) || 0),
+        }],
+      }
+    }
+    case 'REJECT_SUGERENCIA_MULTI': {
+      const { sugerenciaId } = action
+      const sug = state.sugerencias_multi.find(s => s.id === sugerenciaId)
+      if (!sug) return state
+      const extItems = sug.extracto.map(e => ({ ...e, origen: 'extracto', estado: 'rojo' }))
+      const mayItem = { ...sug.mayor, origen: 'mayor', estado: 'rojo' }
+      return {
+        ...state,
+        sugerencias_multi: state.sugerencias_multi.filter(s => s.id !== sugerenciaId),
+        sin_asignar: [...state.sin_asignar, ...extItems, mayItem],
+      }
+    }
     // Sugerencia aceptada → pasa a conciliados
     case 'ACCEPT_SUGERENCIA': {
       const { sugerenciaId } = action
@@ -370,7 +402,7 @@ export default function App() {
         }
       } else if (type === 'done') {
         const ef = e.data.estado_final
-        dispatch({ type: 'MATCHING_DONE', secciones: ef.secciones, conciliados: ef.conciliados, sugerencias: ef.sugerencias, sin_asignar: ef.sin_asignar })
+        dispatch({ type: 'MATCHING_DONE', secciones: ef.secciones, conciliados: ef.conciliados, sugerencias: ef.sugerencias, sugerencias_multi: ef.sugerencias_multi ?? [], sin_asignar: ef.sin_asignar })
       } else if (type === 'error') {
         dispatch({ type: 'MATCHING_ERROR' })
       }

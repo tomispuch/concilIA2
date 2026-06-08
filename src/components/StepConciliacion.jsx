@@ -32,7 +32,7 @@ export default function StepConciliacion({ state, dispatch, onReset, onShowHelp 
   const [excelError, setExcelError] = useState(null)
   const [verConciliados, setVerConciliados] = useState(false)
 
-  const { secciones, sin_asignar, conciliados, sugerencias, saldo_extracto, saldo_contable, meta, matchingStatus, groqWarning } = state
+  const { secciones, sin_asignar, conciliados, sugerencias, sugerencias_multi, saldo_extracto, saldo_contable, meta, matchingStatus, groqWarning } = state
 
   const todasEnSecciones = Object.values(secciones).flat()
   // Progreso = conciliados + secciones clasificadas (sin arrastres sin tocar) / total
@@ -161,6 +161,50 @@ export default function StepConciliacion({ state, dispatch, onReset, onShowHelp 
                   <div className="flex gap-2">
                     <button onClick={() => dispatch({ type: 'ACCEPT_SUGERENCIA', sugerenciaId: sug.id })} className="flex-1 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-medium">Aceptar</button>
                     <button onClick={() => dispatch({ type: 'REJECT_SUGERENCIA', sugerenciaId: sug.id })} className="flex-1 py-1.5 text-sm bg-white text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors font-medium">Rechazar</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {sugerencias_multi?.length > 0 && (
+          <div className="bg-white border border-purple-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-purple-100 bg-purple-50">
+              <h3 className="text-sm font-semibold text-gray-800">Agrupaciones sugeridas</h3>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">{sugerencias_multi.length}</span>
+              <p className="text-xs text-gray-500 ml-1">Varios movimientos del banco suman al mismo asiento contable — revisá si corresponden</p>
+            </div>
+            <div className="p-4 space-y-3">
+              {sugerencias_multi.map(sug => (
+                <div key={sug.id} className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Extracto ({sug.extracto.length} movimientos)</p>
+                      <div className="space-y-1">
+                        {sug.extracto.map(e => (
+                          <div key={e.id} className="bg-white rounded p-2 border border-purple-100 text-xs">
+                            <p className="text-gray-600 leading-snug">{e.descripcion}</p>
+                            <p className="font-semibold text-gray-900 mt-0.5">{formatMoneda(e.monto)}</p>
+                          </div>
+                        ))}
+                        <div className="text-xs font-semibold text-purple-700 text-right pr-1">
+                          Total: {formatMoneda(sug.extracto.reduce((s, e) => s + Math.abs(Number(e.monto) || 0), 0))}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Mayor (1 asiento)</p>
+                      <div className="bg-white rounded p-2.5 border border-purple-100 text-xs">
+                        <p className="text-gray-600 leading-snug">{sug.mayor.descripcion}</p>
+                        <p className="font-semibold text-gray-900 mt-0.5">{formatMoneda(sug.mayor.monto)}</p>
+                        {sug.mayor.referencia && <p className="text-gray-400 mt-0.5">{sug.mayor.referencia}</p>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => dispatch({ type: 'ACCEPT_SUGERENCIA_MULTI', sugerenciaId: sug.id })} className="flex-1 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-medium">Aceptar</button>
+                    <button onClick={() => dispatch({ type: 'REJECT_SUGERENCIA_MULTI', sugerenciaId: sug.id })} className="flex-1 py-1.5 text-sm bg-white text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors font-medium">Rechazar</button>
                   </div>
                 </div>
               ))}

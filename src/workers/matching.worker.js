@@ -192,13 +192,47 @@ async function runMatching(n8nData) {
     })
   }
 
+  // Paso 5: subset sum N:1 → sugerencias de multi-matcheo
+  function findSubsetSum(items, targetCents, maxSize = 10) {
+    function search(start, current, sumCents) {
+      if (sumCents === targetCents && current.length >= 2) return [...current]
+      if (current.length >= maxSize || sumCents > targetCents) return null
+      for (let i = start; i < items.length; i++) {
+        current.push(items[i])
+        const found = search(i + 1, current, sumCents + Math.round(Math.abs(items[i].monto) * 100))
+        if (found) return found
+        current.pop()
+      }
+      return null
+    }
+    return search(0, [], 0)
+  }
+
+  const multiMatcheadosExt = new Set()
+  const multiMatcheadosMay = new Set()
+  const sugerencias_multi = []
+
+  const extLibres = extractoRojos.filter(e => !groqMatcheados.has(e.id))
+  const mayLibres = mayorRojos.filter(m => !mayorUsado.has(m.id) && !groqMatcheados.has(m.id))
+
+  if (extLibres.length <= 50) for (const m of mayLibres) {
+    const targetCents = Math.round(Math.abs(m.monto) * 100)
+    const disponibles = extLibres.filter(e => !multiMatcheadosExt.has(e.id))
+    const grupo = findSubsetSum(disponibles, targetCents)
+    if (grupo) {
+      grupo.forEach(e => multiMatcheadosExt.add(e.id))
+      multiMatcheadosMay.add(m.id)
+      sugerencias_multi.push({ id: `multi_${m.id}`, extracto: grupo, mayor: m })
+    }
+  }
+
   // Paso 4: sin match → van a sin_asignar (el contador clasifica manualmente)
   for (const ext of extractoRojos) {
-    if (groqMatcheados.has(ext.id)) continue
+    if (groqMatcheados.has(ext.id) || multiMatcheadosExt.has(ext.id)) continue
     sin_asignar.push({ id: ext.id, origen: 'extracto', estado: 'rojo', fecha: ext.fecha, descripcion: ext.descripcion, monto: ext.monto, referencia: ext.referencia })
   }
   for (const m of mayorRojos) {
-    if (mayorUsado.has(m.id) || groqMatcheados.has(m.id)) continue
+    if (mayorUsado.has(m.id) || groqMatcheados.has(m.id) || multiMatcheadosMay.has(m.id)) continue
     sin_asignar.push({ id: m.id, origen: 'mayor', estado: 'rojo', fecha: m.fecha, descripcion: m.descripcion, monto: m.monto, referencia: m.referencia })
   }
 
@@ -206,7 +240,7 @@ async function runMatching(n8nData) {
   // Mayor items con monto=0 → ignorar
 
   self.postMessage({ type: 'progress', percent: 100, message: 'Análisis completado' })
-  self.postMessage({ type: 'done', estado_final: { secciones, conciliados, sugerencias, sin_asignar } })
+  self.postMessage({ type: 'done', estado_final: { secciones, conciliados, sugerencias, sugerencias_multi, sin_asignar } })
 }
 
 self.onmessage = (e) => {
