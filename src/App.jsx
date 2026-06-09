@@ -24,56 +24,65 @@ function safeNum(v) {
   return isNaN(n) ? 0 : n
 }
 
+function getCol(obj, keyword) {
+  const key = Object.keys(obj).find(k => k.toLowerCase().includes(keyword.toLowerCase()))
+  return key ? safeNum(obj[key]) : 0
+}
+
 function normalizeN8nResponse(data) {
   const rawExt = data.extracto ?? []
   const extracto = rawExt.map((t, i) => {
-    const credito = safeNum(t.credito)
-    const debito = safeNum(t.debito)
+    const credito = getCol(t, 'credito') || getCol(t, 'crédito')
+    const debito = getCol(t, 'debito') || getCol(t, 'débito')
+    const montoCol = getCol(t, 'monto')
     let monto
-    if (t.monto != null) {
-      monto = safeNum(t.monto)
+    if (montoCol !== 0) {
+      monto = montoCol
     } else if (credito !== 0 || debito !== 0) {
-      // N8N detectó columnas débito/crédito correctamente
       monto = credito - debito
     } else if (i > 0) {
-      // Fallback PDF: delta entre saldos consecutivos
-      // saldo sube → crédito (positivo), baja → débito (negativo)
-      monto = safeNum(t.saldo) - safeNum(rawExt[i - 1].saldo)
+      monto = getCol(t, 'saldo') - getCol(rawExt[i - 1], 'saldo')
     } else {
       monto = 0
     }
+    let _columnaOrigen
+    if (credito > 0) _columnaOrigen = 'credito'
+    else if (debito > 0) _columnaOrigen = 'debito'
     return {
       id: t.id ?? `e${i + 1}`,
       fecha: t.fecha ?? '',
       descripcion: t.descripcion ?? '',
       referencia: t.comprobante ?? t.referencia ?? '',
       monto,
+      ...(_columnaOrigen ? { _columnaOrigen } : {}),
     }
   })
 
   const rawMay = data.mayor ?? []
   const mayor = rawMay.map((t, i) => {
-    const debe = safeNum(t.debe)
-    const haber = safeNum(t.haber)
+    const debe = getCol(t, 'debe')
+    const haber = getCol(t, 'haber')
+    const montoColM = getCol(t, 'monto')
     let monto
-    if (t.monto != null) {
-      monto = safeNum(t.monto)
+    if (montoColM !== 0) {
+      monto = montoColM
     } else if (debe !== 0 || haber !== 0) {
-      // debe = movimiento positivo en cuenta banco (depósito)
-      // haber = movimiento negativo (pago)
       monto = debe - haber
     } else if (i > 0) {
-      // Fallback delta saldo
-      monto = safeNum(t.saldo) - safeNum(rawMay[i - 1].saldo)
+      monto = getCol(t, 'saldo') - getCol(rawMay[i - 1], 'saldo')
     } else {
       monto = 0
     }
+    let _columnaOrigen
+    if (debe > 0) _columnaOrigen = 'debe'
+    else if (haber > 0) _columnaOrigen = 'haber'
     return {
       id: t.id ?? `m${i + 1}`,
       fecha: t.fecha ?? '',
       descripcion: t.descripcion ?? t.comentario ?? t.nombre ?? t.comprobante ?? '',
       referencia: t.comprobante ?? t.referencia ?? '',
       monto,
+      ...(_columnaOrigen ? { _columnaOrigen } : {}),
     }
   })
 
@@ -316,17 +325,23 @@ function reducer(state, action) {
     case 'AUTO_CLASIFICAR_PENDIENTES': {
       const esBanco = p => p.origen === 'extracto' ||
         (p.origen === 'arrastre' && p._seccionOrigen !== 'pagos_no_debitados' && p._seccionOrigen !== 'cobranzas_no_acreditadas')
-      const bancoPart = state.sin_asignar.filter(esBanco).map(p => ({ ...p, autoClasificado: true }))
-      const librosPart = state.sin_asignar.filter(p => !esBanco(p)).map(p => ({ ...p, autoClasificado: true }))
-      return {
-        ...state,
-        sin_asignar: [],
-        secciones: {
-          ...state.secciones,
-          pagos_no_contabilizados: [...state.secciones.pagos_no_contabilizados, ...bancoPart],
-          pagos_no_debitados: [...state.secciones.pagos_no_debitados, ...librosPart],
-        },
+      const secExtracto = p => {
+        if (p._columnaOrigen === 'debito') return 'pagos_no_contabilizados'
+        if (p._columnaOrigen === 'credito') return 'cobranzas_no_contabilizadas'
+        return p.monto < 0 ? 'pagos_no_contabilizados' : 'cobranzas_no_contabilizadas'
       }
+      const secMayor = p => {
+        if (p._columnaOrigen === 'haber') return 'pagos_no_debitados'
+        if (p._columnaOrigen === 'debe') return 'cobranzas_no_acreditadas'
+        return p.monto < 0 ? 'pagos_no_debitados' : 'cobranzas_no_acreditadas'
+      }
+      const nuevasSecciones = { ...state.secciones }
+      for (const p of state.sin_asignar) {
+        const partida = { ...p, autoClasificado: true }
+        const sec = esBanco(p) ? secExtracto(p) : secMayor(p)
+        nuevasSecciones[sec] = [...nuevasSecciones[sec], partida]
+      }
+      return { ...state, sin_asignar: [], secciones: nuevasSecciones }
     }
     case 'ASSIGN_SECTION': {
       const { partidaId, targetSeccionId } = action
