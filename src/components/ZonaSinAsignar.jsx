@@ -183,7 +183,7 @@ export default function ZonaSinAsignar({ partidas, dispatch }) {
         </div>
         <button
           onClick={() => {
-            if (window.confirm(`¿Clasificar automáticamente los ${partidas.length} movimientos pendientes?\n\nExtracto (débitos) → "Pagos banco no contabilizados"\nExtracto (créditos) → "Cobranzas no contabilizadas"\nMayor (débitos) → "Pagos contabilizados no debitados"\nMayor (créditos) → "Cobranzas no acreditadas"\n\nQuedan marcados como "auto" para que los puedas revisar.`))
+            if (window.confirm(`¿Clasificar automáticamente los ${partidas.length} movimientos pendientes?\n\nExtracto (débitos) → "Pagos banco no contabilizados"\nExtracto (créditos) → "Cobranzas no contabilizadas"\nMayor (haber) → "Pagos contabilizados no debitados"\nMayor (debe) → "Cobranzas no acreditadas"\n\nQuedan marcados como "auto" para que los puedas revisar.`))
               dispatch({ type: 'AUTO_CLASIFICAR_PENDIENTES' })
           }}
           className="text-xs bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg px-3 py-1.5 transition-colors shrink-0"
