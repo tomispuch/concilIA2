@@ -4,6 +4,7 @@ import StepConciliacion from './components/StepConciliacion'
 import ConversorExtracto from './components/ConversorExtracto'
 import Loader from './components/Loader'
 import HowItWorks from './components/HowItWorks'
+import SupportChat from './components/SupportChat'
 import { parsearArchivos } from './utils/webhooks'
 import { matchearSemantico } from './utils/groq'
 import MatchingWorker from './workers/matching.worker.js?worker'
@@ -458,6 +459,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SupportChat />
       {showHelp && <HowItWorks onClose={() => setShowHelp(false)} />}
       {state.loading && <Loader message={state.loadingMsg} />}
       {state.step === 'upload' && (
