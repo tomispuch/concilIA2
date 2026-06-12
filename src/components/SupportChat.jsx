@@ -250,8 +250,11 @@ export default function SupportChat() {
   const [messages, setMessages] = useState([INITIAL_MESSAGE])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [rateLimited, setRateLimited] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const timestampsRef = useRef([])
+  const rateLimitTimerRef = useRef(null)
 
   useEffect(() => {
     // Show greeting bubble with a slight delay after mount
@@ -284,7 +287,23 @@ export default function SupportChat() {
 
   const sendMessage = async () => {
     const text = input.trim()
-    if (!text || loading) return
+    if (!text || loading || rateLimited) return
+
+    // Rate limit: max 4 mensajes en 60 segundos
+    const now = Date.now()
+    timestampsRef.current = timestampsRef.current.filter(t => t > now - 60_000)
+    if (timestampsRef.current.length >= 4) {
+      const msUntilUnblock = timestampsRef.current[0] + 60_000 - now
+      setRateLimited(true)
+      setMessages(prev => [...prev, {
+        role: 'system',
+        content: 'Enviaste muchos mensajes en poco tiempo. Esperá un momento antes de continuar.',
+      }])
+      if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current)
+      rateLimitTimerRef.current = setTimeout(() => setRateLimited(false), msUntilUnblock)
+      return
+    }
+    timestampsRef.current.push(now)
 
     const userMsg = { role: 'user', content: text }
     const nextMessages = [...messages, userMsg]
@@ -303,7 +322,7 @@ export default function SupportChat() {
           model: 'llama-3.3-70b-versatile',
           max_tokens: 1024,
           temperature: 0.3,
-          messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...nextMessages],
+          messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...nextMessages.slice(-6)],
         }),
       })
 
@@ -374,19 +393,30 @@ export default function SupportChat() {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth">
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed break-words ${
-                    msg.role === 'user'
-                      ? 'bg-[#082e56] text-white rounded-br-sm'
-                      : 'bg-gray-100 text-gray-800 rounded-bl-sm'
-                  }`}
-                >
-                  {msg.role === 'user' ? msg.content : renderContent(msg.content)}
+            {messages.map((msg, i) => {
+              if (msg.role === 'system') {
+                return (
+                  <div key={i} className="flex justify-center">
+                    <div className="bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-xl px-3 py-2 text-center max-w-[85%]">
+                      {msg.content}
+                    </div>
+                  </div>
+                )
+              }
+              return (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed break-words ${
+                      msg.role === 'user'
+                        ? 'bg-[#082e56] text-white rounded-br-sm'
+                        : 'bg-gray-100 text-gray-800 rounded-bl-sm'
+                    }`}
+                  >
+                    {msg.role === 'user' ? msg.content : renderContent(msg.content)}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
             {/* Typing indicator */}
             {loading && (
@@ -412,14 +442,14 @@ export default function SupportChat() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Escribí tu consulta..."
-              disabled={loading}
+              disabled={loading || rateLimited}
               className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none
                 focus:border-[#082e56] focus:ring-2 focus:ring-[#082e56]/10 transition-all
                 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-gray-400"
             />
             <button
               onClick={sendMessage}
-              disabled={!input.trim() || loading}
+              disabled={!input.trim() || loading || rateLimited}
               className="bg-[#082e56] hover:bg-[#0a3a6b] active:bg-[#061f3a] text-white rounded-xl px-3 py-2.5
                 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
               aria-label="Enviar"
