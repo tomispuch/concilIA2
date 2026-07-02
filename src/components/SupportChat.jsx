@@ -319,7 +319,7 @@ export default function SupportChat() {
           Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: 'openai/gpt-oss-120b',
           max_tokens: 1024,
           temperature: 0.3,
           messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...nextMessages.slice(-6)],
